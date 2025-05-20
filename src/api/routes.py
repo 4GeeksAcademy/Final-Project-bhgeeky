@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, User, Products, Favorites, Checkout, ShoppingCart
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import datetime
 import stripe
@@ -35,6 +36,11 @@ def register():
         email = request.json.get('email', None)
         user_name = request.json.get('user_name', None)
         password = request.json.get('password', None)
+        first_name = request.json.get('first_name', None)
+        last_name = request.json.get('last_name', None)
+        phone = request.json.get('phone', None)
+        address = request.json.get('address', None)
+        is_active = request.json.get('is_active', True)
 
         if not email or not password or not user_name:
             return jsonify({'msg': 'Missing data' }), 400
@@ -46,7 +52,16 @@ def register():
         if check_user:
             return jsonify({'msg': 'User already Exists'}), 400
 
-        new_user = User( email=email, password=password, user_name=user_name)
+        new_user = User(
+            email=email,
+            password=generate_password_hash(password),
+            user_name=user_name,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            address=address,
+            is_active=is_active
+        )
 
         db.session.add(new_user)
         db.session.commit()
@@ -166,29 +181,42 @@ def get_user(user_id):
 
 
 #USER LOGIN
+from werkzeug.security import check_password_hash
+from flask import jsonify, request
+import datetime
+from flask_jwt_extended import create_access_token
+
 @api.route('/login', methods=['POST'])
 def user_login():
     try:
-        #extraer info
+        # Extraer la información del JSON
         email = request.json.get('email', None)
         password = request.json.get('password', None)
 
-        #check de que está toda la info
+        # Comprobar que se haya enviado toda la información necesaria
         if not email or not password:
-            return jsonify({'msg' : 'Missing data'}), 400
+            return jsonify({'msg': 'Missing data'}), 400
         
-        #comprobar que existe el usuario
+        # Comprobar si existe un usuario con el correo proporcionado
         check_user = User.query.filter_by(email=email).first()
 
-        if check_user.password == password:
-            expires = datetime.timedelta(days=1)
+        if check_user is None:
+            return jsonify({'msg': 'User not found'}), 404
 
-            access_token = create_access_token(identity=str(check_user.id), expires_delta=expires)
-            return jsonify({'msg': 'ok', 'token': access_token, 'user': check_user.serialize() }), 201
-        return jsonify({'msg': 'Incorrect password'}), 400
-    
+        # Verificar si la contraseña ingresada coincide con el hash almacenado en la base de datos
+        if not check_password_hash(check_user.password, password):
+            return jsonify({'msg': 'Incorrect password'}), 400
+
+        # Si la contraseña es correcta, generar el token de acceso
+        expires = datetime.timedelta(days=1)
+        access_token = create_access_token(identity=str(check_user.id), expires_delta=expires)
+
+        # Retornar la respuesta con el token y los datos del usuario
+        return jsonify({'msg': 'ok', 'token': access_token, 'user': check_user.serialize()}), 200
+
     except Exception as error:
-        return jsonify({'error': str(error)}), 400
+        # Manejar cualquier error que pueda ocurrir
+        return jsonify({'error': str(error)}), 500
     
 #PRODUCTS
 

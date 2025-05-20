@@ -9,7 +9,7 @@ class User(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_name: Mapped[int] = mapped_column(String(100), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(100), nullable=False)
+    password: Mapped[str] = mapped_column(String(600), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
     first_name: Mapped[str] = mapped_column(String(50), unique=False, nullable=False)
     last_name: Mapped[str] = mapped_column(String(120), unique=False, nullable=False)

@@ -1,5 +1,6 @@
 
 import click
+import json
 from api.models import db, User
 
 """
@@ -32,3 +33,25 @@ def setup_commands(app):
     @app.cli.command("insert-test-data")
     def insert_test_data():
         pass
+
+
+    @app.cli.command("products")
+    def products():
+        with open("src/api/commands/products.json") as f:
+            data = json.load(f)
+            for product in data:
+                new_product = Products(
+                    name=product["name"],
+                    description=product["description"],
+                    img=product["img"],
+                    brand=product["brand"],
+                    type=product["type"],
+                    price=product["price"],
+                    stock=product["stock"],
+                    user_id=1
+                )
+                db.session.add(new_product)
+            db.session.commit()
+            print("Products added to the database")
+                
+    

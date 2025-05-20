@@ -1,0 +1,57 @@
+[
+    {
+        "name": "Café Arabigo",
+        "description": "Un café de origen arábigo, con denominación de origen y un sabor suave y afrutado. 250 gr",
+        "price": 15.99,
+        "image": "/workspaces/Final-Project-bhgeeky/src/front/assets/img/CAFE ARABICO.png",
+        "type": "Café", 
+        "brand": "Café del Mundo",
+        "stock": 100
+
+    },
+    {
+        "name": "Café Colombiano",
+        "description": "Café de origen colombiano, conocido por su sabor fuerte y aroma intenso. 250 gr",
+        "price": 17.99,
+        "image": "/workspaces/Final-Project-bhgeeky/src/front/assets/img/CAFE COLOMBIANO.png",
+        "type": "Café",
+        "brand": "Café del Mundo",
+        "stock": 50
+    },
+    {
+        "name": "Café Etíope",
+        "description": "Café de origen etíope, con un perfil de sabor afrutado y floral. 250 gr",
+        "price": 18.99,
+        "image": "/workspaces/Final-Project-bhgeeky/src/front/assets/img/CAFE ETIOPE.png",
+        "type": "Café",
+        "brand": "Café del Mundo",
+        "stock": 75
+    },
+    {
+        "name": "Café Naranja",
+        "description": "Café con un toque de naranja, ideal para los amantes de los sabores cítricos. 250 gr",
+        "price": 16.99,
+        "image": "/workspaces/Final-Project-bhgeeky/src/front/assets/img/CAFE NARANJA.png",
+        "type": "Café",
+        "brand": "Café del Mundo",
+        "stock": 60
+    },
+    {
+        "name": "Café Chocolate",
+        "description": "Café con un toque de chocolate, perfecto para los amantes del dulce. 250 gr",
+        "price": 19.99,
+        "image": "/workspaces/Final-Project-bhgeeky/src/front/assets/img/CAFE CHOCOLATE.png",
+        "type": "Café",
+        "brand": "Café del Mundo",
+        "stock": 40
+    },
+    {
+        "name": "Cafe Cerezas",
+        "description": "Un café etíope con un sabor afrutado y floral, ideal para los amantes de los sabores exóticos. 250 gr",
+        "price": 20.99,
+        "image": "/workspaces/Final-Project-bhgeeky/src/front/assets/img/CAFE CEREZAS.png",
+        "type": "Café",
+        "brand": "Café del Mundo",
+        "stock": 30
+    }
+]
