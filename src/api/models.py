@@ -22,7 +22,8 @@ class User(db.Model):
 
     def serialize(self):
         return {
-            "id": self.id,
+            "user_id": self.id,
+            "user_name": self.user_name,
             "email": self.email,
             "is_active": self.is_active,
             "first_name": self.first_name,
@@ -48,7 +49,7 @@ class Products(db.Model):
     type: Mapped[str] = mapped_column(String(120), unique=False, nullable=False)
     price: Mapped[float] = mapped_column(nullable=False)
     stock: Mapped[str] = mapped_column(String(120), unique=False, nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
 
 
     def serialize(self):
@@ -137,17 +138,26 @@ class ShoppingCart(db.Model):
     __tablename__ = "shopping_cart"
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    cart_id: Mapped[str] = mapped_column(nullable=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(default=1, nullable=False)
+
+    user = db.relationship("User", back_populates="shopping_cart")
+    product = db.relationship("Products", back_populates="shopping_cart")
 
     def serialize(self):
+        product_name = self.product.name if self.product else "Producto Desconocido"
+        product_price = self.product.price if self.product else 0.00 
+
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "product_id": self.product_id
+            "product_id": self.product_id,
+            "cart_id": self.cart_id,
+            "quantity": self.quantity,
+            "product_name": product_name,
+            "product_price": product_price 
         }
-    
-    user = db.relationship("User", back_populates="shopping_cart")
-    product = db.relationship("Products", back_populates="shopping_cart")
 
 class Favorites(db.Model):
     __tablename__ = "favorites"

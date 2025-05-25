@@ -1,5 +1,5 @@
-export const initialStore=()=>{
-  return{
+export const initialStore = () => {
+  return {
     message: null,
     todos: [
       {
@@ -11,28 +11,55 @@ export const initialStore=()=>{
         id: 2,
         title: "Do my homework",
         background: null,
-      }
-    ]
-  }
-}
+      },
+    ],
+    favorites: [],       
+    products: [],        
+  };
+};
 
-export default function storeReducer(store, action = {}) {
-  switch(action.type){
-    case 'set_hello':
+export default function storeReducer(state, action = {}) {
+  switch (action.type) {
+    case "set_hello":
       return {
-        ...store,
-        message: action.payload
+        ...state,
+        message: action.payload,
       };
-      
-    case 'add_task':
 
-      const { id,  color } = action.payload
-
+    case "add_task":
+      const { id, color } = action.payload;
       return {
-        ...store,
-        todos: store.todos.map((todo) => (todo.id === id ? { ...todo, background: color } : todo))
+        ...state,
+        todos: state.todos.map((todo) =>
+          todo.id === id ? { ...todo, background: color } : todo
+        ),
       };
+
+    case "SET_PRODUCTS":
+      return {
+        ...state,
+        products: action.payload,
+      };
+
+    case "SET_FAVORITES":
+      return {
+        ...state,
+        favorites: action.payload.datafavorites
+      };
+
+    case "ADD_TO_FAVORITES":
+      return {
+        ...state,
+        favorites: [...state.favorites, action.payload],
+      };
+
+    case "REMOVE_FROM_FAVORITES":
+      return {
+        ...state,
+        favorites: state.favorites.filter(fav => fav.uid !== action.payload.uid),
+      };
+
     default:
-      throw Error('Unknown action.');
-  }    
+      throw new Error("Unknown action.");
+  }
 }

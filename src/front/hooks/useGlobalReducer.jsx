@@ -22,3 +22,8 @@ export default function useGlobalReducer() {
     const { dispatch, store } = useContext(StoreContext)
     return { dispatch, store };
 }
+
+const initialState = {
+  products: [],
+}
+

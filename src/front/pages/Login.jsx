@@ -82,35 +82,69 @@ export const Login = () => {
     }, [navigate]);
 
     return (
-        <div className="container">
-            <h1>Login</h1>
-            {errorMessage && <p className="alert alert-danger">{errorMessage}</p>}
-            {infoData && <p className="alert alert-success">Login successful!</p>}
-            <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                    <label htmlFor="email" className="form-label">Email</label>
-                    <input
-                        type="email"
-                        className="form-control"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
+        <div className="container vh-200 d-flex align-items-center justify-content-center" style={{ backgroundColor: "#fdf6f0" }}>
+            
+            <div className="w-100" style={{ maxWidth: "500px" }}>
+                {/* Logo centrado */}
+                <div className="text-center mb-4 mt-0">
+                    <img src="public/img/LOGO MARRON OSCURO.png" alt="Logo" style={{ maxHeight: "500px" }} />
                 </div>
-                <div className="mb-3">
-                    <label htmlFor="password" className="form-label">Password</label>
-                    <input
-                        type="password"
-                        className="form-control"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
+
+                {/* Card contenedor */}
+                <div className="card shadow-sm border-0 rounded-4 p-4" style={{ backgroundColor: "#fff4eb" }}>
+                    
+                    <h2 className="text-center mb-4" style={{ color: "#5a3e2b", fontWeight: "600" }}>Iniciar Sesión</h2>
+
+                    {errorMessage && <div className="alert alert-danger mb-3">{errorMessage}</div>}
+                    {infoData && <div className="alert alert-success mb-3">¡Inicio de sesión exitoso!</div>}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-3">
+                            <label htmlFor="email" className="form-label">Correo electrónico</label>
+                            <input
+                                type="email"
+                                className="form-control"
+                                id="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="password" className="form-label">Contraseña</label>
+                            <input
+                                type="password"
+                                className="form-control"
+                                id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="btn btn-dark w-100"
+                            style={{ backgroundColor: "#5a3e2b", borderColor: "#5a3e2b" }}
+                        >
+                            Iniciar Sesión
+                        </button>
+
+                        <h2 className="text-center mb-4" style={{ color: "#5a3e2b", fontWeight: "400" }}>O registrese si no tiene cuenta creada</h2>
+                        <button
+                            type="submit"
+                            link="/register"
+                            onClick={() => navigate("/register")}
+                            className="btn btn-dark w-100"
+                            style={{ backgroundColor: "#5a3e2b", borderColor: "#5a3e2b" }}
+                        >
+                            Registrarse
+                        </button>
+
+                        
+                    </form>
                 </div>
-                <button type="submit" className="btn btn-primary">Login</button>
-            </form>
+            </div>
         </div>
+
     );
 };

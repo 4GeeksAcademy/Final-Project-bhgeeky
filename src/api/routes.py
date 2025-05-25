@@ -5,15 +5,26 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, User, Products, Favorites, Checkout, ShoppingCart
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.orm import joinedload
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
 import datetime
 import stripe
+import os
 
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
 CORS(api)
+
+
+def get_optional_jwt_identity():
+    try:
+        verify_jwt_in_request()
+        return get_jwt_identity()
+    except Exception:
+        return None
+
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -27,6 +38,24 @@ def handle_hello():
 
 
 #USER SETTINGS
+
+
+@api.route('/user', methods=['GET'])
+@jwt_required()
+def get_current_user():
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+
+        if not user:
+            return jsonify({"msg": "User not found"}), 404
+
+        return jsonify(user.serialize()), 200
+    
+    
+
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
 
 
 @api.route('/register', methods=['POST'])
@@ -181,10 +210,7 @@ def get_user(user_id):
 
 
 #USER LOGIN
-from werkzeug.security import check_password_hash
-from flask import jsonify, request
-import datetime
-from flask_jwt_extended import create_access_token
+
 
 @api.route('/login', methods=['POST'])
 def user_login():
@@ -299,6 +325,7 @@ def get_products():
     try:
         #traer todos los productos
         products = Products.query.all()
+        print(f"Found {len(products)} products in the database.")
         products_list = [
             {
                 'id': product.id,
@@ -330,7 +357,7 @@ def get_product(product_id):
         
         product_data = [
             {
-               'id': product.id,
+                'id': product.id,
                 'name': product.name,
                 'description': product.description,
                 'img': product.img,
@@ -483,59 +510,59 @@ def get_shopping_cart():
 
         if not user:
             return jsonify({'msg' : 'User not found'}), 400
+
         
-        shopping_cart_items = ShoppingCart.query.filter_by(user_id=user_id).all()
-        shopping_cart_products_id = [item.product_id for item in shopping_cart_items]
+        shopping_cart_items = ShoppingCart.query.filter_by(user_id=user_id).options(joinedload(ShoppingCart.product)).all()
+        
+        serialized_cart = [item.serialize() for item in shopping_cart_items]
 
-        shopping_cart_products = Products.query.filter(Products.id.in_(shopping_cart_products_id)).all()
-        shopping_cart_product_list = [product.serialize() for product in shopping_cart_products]
+        return jsonify({'shopping_cart_products': serialized_cart}), 200
 
-        return jsonify({'shopping_cart_products': shopping_cart_product_list}), 200
-    
     except Exception as error:
-        return jsonify({'error': str(error)})
+        print(f"Error en get_shopping_cart: {error}", exc_info=True)
+        return jsonify({'error': str(error)}), 500
     
+
 
 @api.route('/shopping-cart', methods=['POST'])
 @jwt_required()
 def add_to_shopping_cart():
     try:
-        id = get_jwt_identity()
-        user = User.query.get(id)
-
-        if not user:
-            return jsonify({'msg': 'User not found'}), 400
-        
-        #extraer product id
+        user_id = get_jwt_identity()
         product_id = request.json.get('product_id', None)
+        
+        quantity = request.json.get('quantity', 1)
+
         if not product_id:
             return jsonify({'msg': 'Product ID is required'}), 400
+
         
-        #verificar si el producto esta en el carrito
-        existing_item = ShoppingCart.query.filter_by(user_id=id, product_id=product_id).first()
+        existing_item = ShoppingCart.query.filter_by(user_id=user_id, product_id=product_id).first()
+
         if existing_item:
-            db.session.delete(existing_item)
-            db.session.commit()
-
-            db.session.refresh(user)
-
-            updated_cart = [item.product_id for item in user.shoppingCart]
             
-            return jsonify({'msg': 'Product removed from shopping cart', 'updatedCart': updated_cart}), 200
-        
+            existing_item.quantity += quantity
+            db.session.commit()
+            msg = 'Product quantity updated in shopping cart'
         else:
-            new_item = ShoppingCart(user_id=id, product_id=product_id)
+            
+            new_item = ShoppingCart(
+                user_id=user_id,
+                product_id=product_id,
+                quantity=quantity 
+            )
             db.session.add(new_item)
             db.session.commit()
+            msg = 'Product added to shopping cart'
 
-        #actualizar el carrito
+        
+        return jsonify({'msg': msg}), 200
 
-        updated_cart = [item.product_id for item in user.shoppingCart]
-        return jsonify({'msg': 'Added to shopping car successfully', 'updatedCart': updated_cart}), 200
-    
     except Exception as error:
+        print(f"Error en add_to_shopping_cart: {error}", exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(error)}), 400
+
     
 
 @api.route('/shopping-cart/<int:product_id>', methods=['DELETE'])
@@ -566,43 +593,99 @@ def delete_from_shopping_cart(product_id):
         return jsonify({'error': str(error)}), 400
     
 
+@api.route('/shopping-cart/<int:product_id>', methods=['PUT'])
+@jwt_required()
+def update_shopping_cart(product_id):
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+
+        if not user:
+            return jsonify({'msg': 'User not found'}), 400
+
+        new_quantity = request.json.get('quantity', None)
+        
+        
+        if not isinstance(new_quantity, int) or new_quantity <= 0:
+            return jsonify({'msg': 'Valid integer quantity greater than 0 is required'}), 400
+        
+        item = ShoppingCart.query.filter_by(user_id=user_id, product_id=product_id).first()
+
+        if not item:
+            return jsonify({'msg': 'Item not found in shopping cart'}), 404
+
+        item.quantity = new_quantity
+        db.session.commit()
+
+        
+        return jsonify({'msg': 'Shopping cart item quantity updated successfully'}), 200
+
+    except Exception as error:
+        print(f"Error en update_shopping_cart: {error}", exc_info=True)
+        db.session.rollback()
+        return jsonify({'error': str(error)}), 500
 ##STRIPE
 
 @api.route('/create-checkout-session', methods=['POST'])
 @jwt_required()
 def create_checkout_session():
     try:
-        data = request.get_json()
+       
+        user_id = get_jwt_identity()
 
-        # Puedes obtener la información de producto desde el body
-        product_name = data.get('name')
-        price = data.get('price')  
-        quantity = data.get('quantity', 1)
+        
+        user = User.query.get(user_id) 
+        
+        if not user:
+            
+            print(f"DEBUG: Usuario no encontrado para ID: {user_id}")
+            return jsonify({'error': 'Usuario no encontrado. Por favor, inicia sesión de nuevo.'}), 404 # O 400
 
-        if not product_name or not price:
-            return jsonify({'msg': 'Missing product name or price'}), 400
+        cart_items = ShoppingCart.query.filter_by(user_id=user_id).options(joinedload(ShoppingCart.product)).all()
 
+        if not cart_items:
+            return jsonify({'msg': 'El carrito de compras está vacío.'}), 400
+
+        line_items_for_stripe = []
+        for item in cart_items:
+            
+            if not item.product:
+                print(f"ADVERTENCIA: Producto con ID {item.product_id} no encontrado para el ítem del carrito {item.id}. Saltando este ítem.")
+                continue 
+
+            line_items_for_stripe.append({
+                'price_data': {
+                    'currency': 'usd', 
+                    'product_data': {
+                        'name': item.product.name, 
+                        
+                    },
+                    
+                    'unit_amount': int(float(item.product.price) * 100), 
+                },
+                'quantity': item.quantity, 
+            })
+
+        if not line_items_for_stripe:
+            return jsonify({'msg': 'No se encontraron productos válidos en el carrito para procesar el pago.'}), 400
+        print(f"DEBUGGING: Clave API siendo usada para Stripe.create: {stripe.api_key}")
+        # Crear la sesión de Checkout de Stripe
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             mode='payment',
-            line_items=[{
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {
-                        'name': product_name,
-                    },
-                    'unit_amount': int(float(price) * 100),  # convertir a centavos
-                },
-                'quantity': quantity,
-            }],
-            success_url='https://tupagina.com/success',
-            cancel_url='https://tupagina.com/cancel',
+            line_items=line_items_for_stripe, 
+            success_url=os.environ.get('FRONTEND_SUCCESS_URL', 'https://tupagina.com/success'), 
+            cancel_url=os.environ.get('FRONTEND_CANCEL_URL', 'https://tupagina.com/cancel'),
+            
+            customer_email=user.email if user.email else None 
         )
 
-        return jsonify({'checkout_url': session.url})
-    
+        return jsonify({'checkout_url': session.url}), 200 
+
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        
+        print(f"ERROR: Error al crear la sesión de checkout: {e}") 
+        return jsonify({'error': 'Error interno del servidor al crear la sesión de pago.'}), 500
 
 
 
