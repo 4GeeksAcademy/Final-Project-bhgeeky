@@ -2,7 +2,7 @@ import {
     defineConfig
 } from 'vite'
 import react from '@vitejs/plugin-react'
-
+console.log('VITE_API_URL:', process.env.VITE_API_URL);
 export default defineConfig({
     plugins: [react()],
     server: {
@@ -10,5 +10,7 @@ export default defineConfig({
     },
     build: {
         outDir: 'dist'
-    }
+    },
+
+    envPrefix: 'VITE_',
 })
